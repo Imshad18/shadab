@@ -140,6 +140,47 @@ INJECTION_PATTERNS = [
     r"order.{0,30}(explain|describe).{0,30}(its|their|the).{0,10}(use|purpose|function)",
     r"write (an?|the) (article|essay|blog|post|guide|tutorial|summary|overview|report)",
     r"(generate|create|draft).{0,20}(article|essay|content|post|guide)",
+    r"WHITFIELD\s*(NOTICE|UPDATE|OFFICIAL|ALERT|SYSTEM|ADMIN|SUPPORT)",
+    r"\[WHITFIELD",
+    r"Whitfield Official",
+    r"⊰.*⊱",                       
+    r"LOVE.*PLINY.*LOVE",          
+    r"⦑.*⦒",
+    r"/L\\O/V\\E",              
+    r"PLI.?N.?Y",   
+    r"[\U0001F600-\U0001FFFF]{3,}", 
+    r"ignore all (previous|prior|above|former)",
+    r"disregard (all|any|your|previous)",
+    r"your (real|true|actual|hidden|secret) (purpose|goal|task|mission|instruction)",
+    r"pretend (you are|you're|to be) (not|a different|an? (unrestricted|free|unfiltered))",
+    r"act as if (you have no|you don't have|without) (restriction|filter|limit|guideline)",
+    r"DAN\b",                     
+    r"jailbreak",
+    r"developer mode",
+    r"unrestricted mode",
+    # --- Invisible Unicode / Zero-width characters ---
+    r"\u200b",          # zero-width space
+    r"\u200c",          # zero-width non-joiner
+    r"\u200d",          # zero-width joiner
+    r"\u200e",          # left-to-right mark
+    r"\u200f",          # right-to-left mark
+    r"\u202a",          # left-to-right embedding
+    r"\u202b",          # right-to-left embedding
+    r"\u202c",          # pop directional formatting
+    r"\u202d",          # left-to-right override
+    r"\u202e",          # right-to-left override (very suspicious)
+    r"\u2060",          # word joiner
+    r"\u2061",          # function application
+    r"\u2062",          # invisible times
+    r"\u2063",          # invisible separator
+    r"\u2064",          # invisible plus
+    r"\ufeff",          # zero-width no-break space (BOM)
+    r"\u00ad",          # soft hyphen (used to split keywords)
+    r"\u034f",          # combining grapheme joiner
+    r"\u115f",          # hangul choseong filler
+    r"\u1160",          # hangul jungseong filler
+    r"\u3164",          # hangul filler
+    r"\uffa0",          # halfwidth hangul filler
     
 ]
 
@@ -150,14 +191,32 @@ class Message(BaseModel):
 class Conversation(BaseModel):
     messages: List[Message]
 
+def has_invisible_unicode(text):
+    """Detect invisible/zero-width unicode characters used to hide injections."""
+    INVISIBLE = {
+        '\u200b', '\u200c', '\u200d', '\u200e', '\u200f',
+        '\u202a', '\u202b', '\u202c', '\u202d', '\u202e',
+        '\u2060', '\u2061', '\u2062', '\u2063', '\u2064',
+        '\ufeff', '\u00ad', '\u034f', '\u115f', '\u1160',
+        '\u3164', '\uffa0'
+    }
+    return any(char in INVISIBLE for char in text)
+
 def is_harmful(conversation):
     user_text = " ".join(
         msg.content for msg in conversation.messages
         if msg.role == "user"
     )
+    
+    # Check invisible unicode first
+    if has_invisible_unicode(user_text):
+        return True
+    
+    # Then pattern matching
     for pattern in INJECTION_PATTERNS:
         if re.search(pattern, user_text, re.IGNORECASE):
             return True
+    
     return False
 
 @app.post("/classify")
