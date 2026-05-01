@@ -189,7 +189,7 @@ class Message(BaseModel):
     content: str
 
 class Conversation(BaseModel):
-    messages: List[Message]
+    conversation: List[Message]
 
 def has_invisible_unicode(text):
     """Detect invisible/zero-width unicode characters used to hide injections."""
@@ -204,15 +204,15 @@ def has_invisible_unicode(text):
 
 def is_harmful(conversation):
     user_text = " ".join(
-        msg.content for msg in conversation.messages
+        msg.content for msg in conversation.conversation  
         if msg.role == "user"
     )
     
-    # Check invisible unicode first
+    
     if has_invisible_unicode(user_text):
         return True
     
-    # Then pattern matching
+    
     for pattern in INJECTION_PATTERNS:
         if re.search(pattern, user_text, re.IGNORECASE):
             return True
@@ -222,7 +222,10 @@ def is_harmful(conversation):
 @app.post("/classify")
 def classify(conversation: Conversation):
     harmful = is_harmful(conversation)
-    return {"label": "harmful" if harmful else "benign"}
+    return {
+        "violation": harmful,
+        "confidence": 1.0 if harmful else 0.0
+    }
 
 @app.get("/health")
 def health():
