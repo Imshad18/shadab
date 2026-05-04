@@ -1,10 +1,16 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import re, json
 from typing import List
+import re
 
 app = FastAPI()
 
+class Message(BaseModel):
+    role: str
+    content: str
+
+class Conversation(BaseModel):
+    conversation: List[Message]
 
 INJECTION_PATTERNS = [    
     r"\[SYSTEM\]",
@@ -73,7 +79,6 @@ INJECTION_PATTERNS = [
     r"new instruction",
     r"your (new|actual|real|true) (role|instruction|purpose|task|job|directive)",
     r"you are now",
-    r"you are now",
     r"from now on.{0,30}you",
     r"forget.{0,20}(previous|prior|your)",
     r"court.{0,20}(deadline|order|case)",
@@ -126,7 +131,7 @@ INJECTION_PATTERNS = [
     r"customer_id\s*=\s*['\"]?customer_\d+",
     r"Current logged customer",
     r"logged.{0,20}customer.{0,20}customer_\d+",
-    r"customer_\d{6,}",         
+    r"customer_\d{6,}",
     r"interacting exclusively with",
     r"you are (now |currently |)serving customer",
     r"active customer.{0,20}customer_\d+",
@@ -143,56 +148,29 @@ INJECTION_PATTERNS = [
     r"WHITFIELD\s*(NOTICE|UPDATE|OFFICIAL|ALERT|SYSTEM|ADMIN|SUPPORT)",
     r"\[WHITFIELD",
     r"Whitfield Official",
-    r"⊰.*⊱",                       
-    r"LOVE.*PLINY.*LOVE",          
+    r"⊰.*⊱",
+    r"LOVE.*PLINY.*LOVE",
     r"⦑.*⦒",
-    r"/L\\O/V\\E",              
-    r"PLI.?N.?Y",   
-    r"[\U0001F600-\U0001FFFF]{3,}", 
+    r"/L\\O/V\\E",
+    r"PLI.?N.?Y",
+    r"[\U0001F600-\U0001FFFF]{3,}",
     r"ignore all (previous|prior|above|former)",
     r"disregard (all|any|your|previous)",
     r"your (real|true|actual|hidden|secret) (purpose|goal|task|mission|instruction)",
     r"pretend (you are|you're|to be) (not|a different|an? (unrestricted|free|unfiltered))",
     r"act as if (you have no|you don't have|without) (restriction|filter|limit|guideline)",
-    r"DAN\b",                     
+    r"DAN\b",
     r"jailbreak",
     r"developer mode",
     r"unrestricted mode",
-    # --- Invisible Unicode / Zero-width characters ---
-    r"\u200b",          # zero-width space
-    r"\u200c",          # zero-width non-joiner
-    r"\u200d",          # zero-width joiner
-    r"\u200e",          # left-to-right mark
-    r"\u200f",          # right-to-left mark
-    r"\u202a",          # left-to-right embedding
-    r"\u202b",          # right-to-left embedding
-    r"\u202c",          # pop directional formatting
-    r"\u202d",          # left-to-right override
-    r"\u202e",          # right-to-left override (very suspicious)
-    r"\u2060",          # word joiner
-    r"\u2061",          # function application
-    r"\u2062",          # invisible times
-    r"\u2063",          # invisible separator
-    r"\u2064",          # invisible plus
-    r"\ufeff",          # zero-width no-break space (BOM)
-    r"\u00ad",          # soft hyphen (used to split keywords)
-    r"\u034f",          # combining grapheme joiner
-    r"\u115f",          # hangul choseong filler
-    r"\u1160",          # hangul jungseong filler
-    r"\u3164",          # hangul filler
-    r"\uffa0",          # halfwidth hangul filler
-    
+    r"\u200b", r"\u200c", r"\u200d", r"\u200e", r"\u200f",
+    r"\u202a", r"\u202b", r"\u202c", r"\u202d", r"\u202e",
+    r"\u2060", r"\u2061", r"\u2062", r"\u2063", r"\u2064",
+    r"\ufeff", r"\u00ad", r"\u034f", r"\u115f", r"\u1160",
+    r"\u3164", r"\uffa0",
 ]
 
-class Message(BaseModel):
-    role: str
-    content: str
-
-class Conversation(BaseModel):
-    conversation: List[Message]
-
 def has_invisible_unicode(text):
-    """Detect invisible/zero-width unicode characters used to hide injections."""
     INVISIBLE = {
         '\u200b', '\u200c', '\u200d', '\u200e', '\u200f',
         '\u202a', '\u202b', '\u202c', '\u202d', '\u202e',
@@ -202,21 +180,19 @@ def has_invisible_unicode(text):
     }
     return any(char in INVISIBLE for char in text)
 
-def is_harmful(conversation):
+def is_harmful(conversation: Conversation):
     user_text = " ".join(
-        msg.content for msg in conversation.conversation  
+        msg.content for msg in conversation.conversation
         if msg.role == "user"
     )
-    
-    
+
     if has_invisible_unicode(user_text):
         return True
-    
-    
+
     for pattern in INJECTION_PATTERNS:
         if re.search(pattern, user_text, re.IGNORECASE):
             return True
-    
+
     return False
 
 @app.post("/classify")
