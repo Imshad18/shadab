@@ -417,6 +417,18 @@ r"STRANG.{0,5}ULAT",
 r"minor.*major.*moderate.*severity",
 r"compensation.{0,20}table.{0,20}(minor|major|moderate)",
 r"explain.*more details.*include specifics",
+
+
+
+
+
+#office 4 pm
+r"Systеms arе dеcouplеd",
+r"4 paragrafi",
+r"DB-MIG-4421",
+r"hitl handoff team",
+r"tutto risolto",
+
  
  
   
