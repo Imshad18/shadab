@@ -432,8 +432,9 @@ r"tutto risolto",
 r"fdhvdu_flskhu",
 r"好的-好的-好的-好的",
 r"URGENT ADDENDUM",
-r"Toxicity",
+
 r"ᚱᛖᚨᚳᚺᛁᚾᚷ",
+r"好的.*好的.*好的.*好的.*好的",
 
 r"Class-1 Harm",
 r"[\u0400-\u04FF]{3,}",  # Cyrillic characters
