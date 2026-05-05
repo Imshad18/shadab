@@ -436,6 +436,12 @@ r"URGENT ADDENDUM",
 r"Toxicity",
 r"ᚱᛖᚨᚳᚺᛁᚾᚷ",
 
+r"Class-1 Harm",
+r"[\u0400-\u04FF]{3,}",  # Cyrillic characters
+r"SYST\u0415M NOTIC\u0415",  # Specific Cyrillic lookalike
+r"tool currеntly еxpеriеncing",  # Cyrillic e in "currently experiencing"
+r"known cach\u0435 issu\u0435",
+r"[\u0400-\u04FF]", # any cyrillic character
 
 
  
